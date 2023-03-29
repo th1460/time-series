@@ -1,0 +1,116 @@
+---
+output:
+  xaringan::moon_reader:
+    seal: false
+    lib_dir: libs
+    css: ["default", "rladies-fonts", "resources/css/progress.css", "resources/css/adds.css"]
+    nature:
+      ratio: "16:9"
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+      slideNumberFormat: |
+        <div class="progress-bar-container">
+          <div class="progress-bar" style="width: calc(%current% / %total% * 100%);">
+          </div>
+        </div>
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(message = FALSE, 
+                      warning = FALSE, 
+                      fig.retina = 3,
+                      fig.align = "center")
+
+```
+
+class: inverse, left, middle
+
+background-image: url(resources/images/cover.gif)
+background-size: cover
+
+# Time Series
+
+.large[Thiago Pires | `r format(Sys.Date(), "%b %d, %Y")`]
+
+---
+layout: true
+
+background-position: 97% 3%
+background-size: 7%
+
+---
+class: left middle
+background-color: #00b33c
+
+# Autoregressive model
+
+---
+# AR
+
+The AR model of order 1 is written as:
+
+$$x_t = \delta + \phi_1 x_{t-1} + w_t$$
+- $w_t \sim N(0, \sigma^2_w)$, erros are independently distributed with a normal distribution
+- Errors $w_t$ are independent of $x$
+
+.pull-left[
+
+```{r ar_sim, eval=FALSE}
+
+require(dplyr)
+require(ggplot2)
+set.seed(1234)
+
+ar_sim.8 <- 
+  arima.sim(list(order = c(1,0,0), ar = .8), n = 100)
+ar_sim.3 <- 
+  arima.sim(list(order = c(1,0,0), ar = .3), n = 100)
+ar_sim.8 %>% broom::tidy() %>% 
+  mutate(ar = ".8") %>% 
+  bind_rows(
+    ar_sim.3 %>% broom::tidy() %>% 
+      mutate(ar = ".3")) %>% 
+  ggplot(aes(index, value, colour = ar)) + 
+  geom_line() + theme_minimal() +
+  labs(colour = latex2exp::TeX("$\\phi_1$"))
+
+```
+
+]
+
+.pull-right[
+
+```{r ref.label='ar_sim', echo=FALSE, fig.width=8, fig.height=5}
+```
+
+]
+
+---
+# Autocorrelation
+
+$$\rho_h = \frac{COV(x_t, x_{t-h})}{SD(x_t)SD(x_{t-h})}$$
+
+.pull-left[
+
+```{r}
+
+require(magrittr)
+
+value_lag <- ar_sim.8 %>% 
+  broom::tidy() %>% 
+  mutate(value_lag = value %>% lag())
+
+value_lag %>% head(4)
+
+```
+```{r}
+
+value_lag %>% 
+  na.omit() %$% 
+  cor(value, value_lag)
+
+```
+
+]

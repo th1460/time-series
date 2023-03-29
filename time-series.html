@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
   <head>
-    <title>xaringan-template.utf8.md</title>
+    <title>time-series.utf8</title>
     <meta charset="utf-8" />
     <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
     <link href="libs/remark-css-0.0.1/rladies-fonts.css" rel="stylesheet" />
@@ -19,18 +19,13 @@ class: inverse, left, middle
 background-image: url(resources/images/cover.gif)
 background-size: cover
 
-# Title
+# Time Series
 
-### Subtitle
-
-&lt;img src="resources/images/logo-ibm.png" width="150px"/&gt;
-
-.large[Thiago Pires | 31 Out 2019]
+.large[Thiago Pires | Out 15, 2020]
 
 ---
 layout: true
 
-background-image: url(resources/images/logo-ibm.png)
 background-position: 97% 3%
 background-size: 7%
 
@@ -38,22 +33,86 @@ background-size: 7%
 class: left middle
 background-color: #00b33c
 
-# Section
-
-.large[subtitle section]
+# Autoregressive model
 
 ---
-# Slide title
+# AR
+
+The AR model of order 1 is written as:
+
+`$$x_t = \delta + \phi_1 x_{t-1} + w_t$$`
+- `\(w_t \sim N(0, \sigma^2_w)\)`, erros are independently distributed with a normal distribution
+- Errors `\(w_t\)` are independent of `\(x\)`
+
+.pull-left[
 
 
 ```r
-rnorm(10)
+require(dplyr)
+require(ggplot2)
+set.seed(1234)
+
+ar_sim.8 &lt;- 
+  arima.sim(list(order = c(1,0,0), ar = .8), n = 100)
+ar_sim.3 &lt;- 
+  arima.sim(list(order = c(1,0,0), ar = .3), n = 100)
+ar_sim.8 %&gt;% broom::tidy() %&gt;% 
+  mutate(ar = ".8") %&gt;% 
+  bind_rows(
+    ar_sim.3 %&gt;% broom::tidy() %&gt;% 
+      mutate(ar = ".3")) %&gt;% 
+  ggplot(aes(index, value, colour = ar)) + 
+  geom_line() + theme_minimal() +
+  labs(colour = latex2exp::TeX("$\\phi_1$"))
+```
+
+]
+
+.pull-right[
+
+&lt;img src="time-series_files/figure-html/unnamed-chunk-1-1.png" width="576" style="display: block; margin: auto;" /&gt;
+
+]
+
+---
+# Autocorrelation
+
+`$$\rho_h = \frac{COV(x_t, x_{t-h})}{SD(x_t)SD(x_{t-h})}$$`
+
+.pull-left[
+
+
+```r
+require(magrittr)
+
+value_lag &lt;- ar_sim.8 %&gt;% 
+  broom::tidy() %&gt;% 
+  mutate(value_lag = value %&gt;% lag())
+
+value_lag %&gt;% head(4)
 ```
 
 ```
-##  [1] -2.05575467  0.23989396  0.17770114  1.38131175 -0.44220000
-##  [6] -0.35330206  0.89804968  0.09547525  0.28680850  0.96164727
+## # A tibble: 4 x 3
+##   index  value value_lag
+##   &lt;dbl&gt;  &lt;dbl&gt;     &lt;dbl&gt;
+## 1     1 -1.46     NA    
+## 2     2 -2.11     -1.46 
+## 3     3 -0.582    -2.11 
+## 4     4 -0.941    -0.582
 ```
+
+```r
+value_lag %&gt;% 
+  na.omit() %$% 
+  cor(value, value_lag)
+```
+
+```
+## [1] 0.8979171
+```
+
+]
     </textarea>
 <style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
 <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
